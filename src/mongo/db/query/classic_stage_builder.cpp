@@ -273,6 +273,16 @@ std::unique_ptr<PlanStage> ClassicStageBuilder::build(const QuerySolutionNode* r
             return std::make_unique<GeoNear2DSphereStage>(
                 params, expCtx, _ws, _collection, s2Index);
         }
+        case STAGE_NEIGHBORS: {
+            // TODO decode node
+            // NeighborsStageParams params;
+            // params.filter = node->filter.get();
+            // params.baseBounds = node->baseBounds; // TODO may or may not add this?
+            // const IndexDescriptor* ndindex = _collection->getIndexCatalog()->findIndexByName(
+            //     _opCtx, node-index.identifier.catalogName);
+            // return std::make_unique<NeighborsStage>(params, expCtx, _ws, _collection, ndIndex)
+            MONGO_UNREACHABLE;
+        }
         case STAGE_TEXT_OR: {
             tassert(5432204,
                     "text index key prefix must be defined before processing TEXT_OR node",

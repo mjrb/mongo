@@ -1179,6 +1179,7 @@ env.Library(
         'exec/multi_iterator.cpp',
         'exec/multi_plan.cpp',
         'exec/near.cpp',
+        'exec/neighbors.cpp',
         'exec/or.cpp',
         'exec/plan_cache_util.cpp',
         'exec/plan_stage.cpp',
