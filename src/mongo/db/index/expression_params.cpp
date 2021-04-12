@@ -30,9 +30,11 @@
 #include "mongo/db/index/expression_params.h"
 
 #include "mongo/bson/util/bson_extract.h"
+#include "mongo/db/field_parser.h"
 #include "mongo/db/geo/geoconstants.h"
 #include "mongo/db/hasher.h"
 #include "mongo/db/index/2d_common.h"
+#include "mongo/db/index/nd_access_method.h"
 #include "mongo/db/index/s2_common.h"
 #include "mongo/db/index_names.h"
 #include "mongo/util/str.h"
@@ -207,4 +209,43 @@ void ExpressionParams::initialize2dsphereParams(const BSONObj& infoObj,
             out->indexVersion == S2_INDEX_VERSION_3 || out->indexVersion == S2_INDEX_VERSION_2 ||
                 out->indexVersion == S2_INDEX_VERSION_1);
 }
+
+void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* out) {
+    BSONObjIterator i(infoObj.getObjectField("key"));
+
+    while (i.more()) {
+        BSONElement e = i.next();
+        // TODO support inner indexes like2D?
+        uassert(42000000,
+                "nd index doesn't suport compounding yet",
+                e.type() == String && IndexNames::ND == e.valuestr());
+        out->features.push_back(e.fieldName());
+    }
+
+    // TODO use different error codes here?
+    uassert(42000001, "no n dimensional fields specified", out->features.size());
+
+    // TODO put these somewhere else?
+    BSONField<int> bitsField("bits", 26);
+    BSONField<double> maxField("max", 180.0);
+    BSONField<double> minField("min", -180.0);
+
+    std::string errMsg;
+    auto result = FieldParser::extractNumber(infoObj, bitsField, &out->bits, &errMsg);
+    uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
+
+    result = FieldParser::extractNumber(infoObj, maxField, &out->max, &errMsg);
+    uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
+
+    result = FieldParser::extractNumber(infoObj, minField, &out->min, &errMsg);
+    uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
+
+    // TODO add option for squashing?
+    // TODO right now there is a min and max for all axes instead of each axis
+    // maybe replace that with a vector of mins and vector of maxes
+
+    // see this function for how 2d indexes parse other options
+    // auto result = GeoHashConverter::createFromDoc(infoObj);
+}
+
 }  // namespace mongo

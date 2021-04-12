@@ -1,5 +1,5 @@
 /**
- *    Copyright (C) 2018-present MongoDB, Inc.
+ *    Copyright (C) 2021-present MongoDB, Inc.
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the Server Side Public License, version 1,
@@ -29,58 +29,48 @@
 
 #pragma once
 
-#include <string>
-
-#include "mongo/base/string_data.h"
+#include "mongo/base/status.h"
+#include "mongo/db/index/index_access_method.h"
+#include "mongo/db/jsobj.h"
 
 namespace mongo {
 
-class BSONObj;
-
-/**
- * We need to know what 'type' an index is in order to plan correctly.
- */
-enum IndexType {
-    INDEX_BTREE,
-    INDEX_2D,
-    INDEX_HAYSTACK,
-    INDEX_2DSPHERE,
-    INDEX_TEXT,
-    INDEX_HASHED,
-    INDEX_WILDCARD,
-    INDEX_ND,
+class IndexCatalogEntry;
+class IndexDescriptor;
+struct NDIndexingParams {
+    std::vector<std::string> features;
+    int bits;
+    double min;
+    double max;
 };
 
-/**
- * We use the std::string representation of index names all over the place, so we declare them all
- * once here.
- */
-class IndexNames {
+class NDAccessMethod : public AbstractIndexAccessMethod {
 public:
-    static const std::string BTREE;
-    static const std::string GEO_2D;
-    static const std::string GEO_2DSPHERE;
-    static const std::string GEO_HAYSTACK;
-    static const std::string HASHED;
-    static const std::string TEXT;
-    static const std::string WILDCARD;
-    static const std::string ND;
+    NDAccessMethod(IndexCatalogEntry* btreeState, std::unique_ptr<SortedDataInterface> btree);
+
+private:
+    const IndexDescriptor* getDescriptor() {
+        return _descriptor;
+    }
+    NDIndexingParams& getParams() {
+        return _params;
+    }
 
     /**
-     * Return the first std::string value in the provided object.  For an index key pattern,
-     * a field with a non-string value indicates a "special" (not straight Btree) index.
+     * Fills 'keys' with the keys that should be generated for 'obj' on this index.
+     *
+     * This function ignores the 'multikeyPaths' and 'multikeyMetadataKeys' pointers because 2d
+     * indexes don't support tracking path-level multikey information.
      */
-    static std::string findPluginName(const BSONObj& keyPattern);
+    void doGetKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
+                   const BSONObj& obj,
+                   GetKeysContext context,
+                   KeyStringSet* keys,
+                   KeyStringSet* multikeyMetadataKeys,
+                   MultikeyPaths* multikeyPaths,
+                   boost::optional<RecordId> id) const final;
 
-    /**
-     * Is the provided access method name one we recognize?
-     */
-    static bool isKnownName(const std::string& name);
-
-    /**
-     * Convert an index name to an IndexType.
-     */
-    static IndexType nameToType(StringData accessMethod);
+    NDIndexingParams _params;
 };
 
 }  // namespace mongo

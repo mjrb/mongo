@@ -42,6 +42,7 @@ namespace mongo {
 class CollatorInterface;
 struct TwoDIndexingParams;
 struct S2IndexingParams;
+struct NDIndexingParams;
 
 namespace fts {
 
@@ -135,6 +136,18 @@ public:
      * Used by getHaystackKeys and HaystackAccessMethod::searchCommand.
      */
     static std::string makeHaystackString(int hashedX, int hashedY);
+
+    //
+    // nd
+    //
+
+    static void getNDKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
+                          const BSONObj& obj,
+                          const NDIndexingParams& params,
+                          KeyStringSet* keys,
+                          KeyString::Version keyStringVersion,
+                          Ordering ordering,
+                          boost::optional<RecordId> id = boost::none);
 
     //
     // S2

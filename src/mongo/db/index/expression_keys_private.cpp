@@ -656,4 +656,40 @@ void ExpressionKeysPrivate::getS2Keys(SharedBufferFragmentBuilder& pooledBufferB
     keys->adopt_sequence(std::move(keysSequence));
 }
 
+void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
+                                      const BSONObj& obj,
+                                      const NDIndexingParams& params,
+                                      KeyStringSet* keys,
+                                      KeyString::Version keyStringVersion,
+                                      Ordering ordering,
+                                      boost::optional<RecordId> id) {
+    BSONElementMultiSet bSet;
+
+    // TODO do this for every feild name in params.featutes to get the feature vector of this
+    // document
+
+    // Get all the nested location fields, but don't return individual elements from the last array,
+    // if it exists.
+
+    // dps::extractAllElementsAlongPath(obj, params.geo.c_str(), bSet, false);
+
+    // if (bSet.empty())
+    //     return;
+
+    // TODO uassert min < x < max
+
+    auto keysSequence = keys->extract_sequence();
+    KeyString::PooledBuilder keyString(pooledBufferBuilder, keyStringVersion, ordering);
+    // for bits / len(features)
+    // get which quadrant its in to get the current symbol in the keystring
+    // go the next deeper level in the tree
+
+    keyString.appendNull();  // TODO remove this?
+    if (id) {
+        keyString.appendRecordId(*id);
+    }
+    keysSequence.push_back(keyString.release());
+    keys->adopt_sequence(std::move(keysSequence));
+}
+
 }  // namespace mongo

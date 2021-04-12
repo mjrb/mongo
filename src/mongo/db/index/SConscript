@@ -160,6 +160,7 @@ env.Library(
         "index_access_method_factory_impl.cpp",
         "s2_access_method.cpp",
         "wildcard_access_method.cpp",
+        "nd_access_method.cpp",
     ],
     LIBDEPS=[
         '$BUILD_DIR/mongo/base',

@@ -1,5 +1,5 @@
 /**
- *    Copyright (C) 2018-present MongoDB, Inc.
+ *    Copyright (C) 2021-present MongoDB, Inc.
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the Server Side Public License, version 1,
@@ -27,41 +27,42 @@
  *    it in the license file.
  */
 
-#pragma once
+#include "mongo/db/index/nd_access_method.h"
 
 #include <string>
 #include <vector>
 
-#include "mongo/db/hasher.h"
+#include "mongo/db/catalog/index_catalog_entry.h"
+#include "mongo/db/index/expression_keys_private.h"
+#include "mongo/db/index/expression_params.h"
+#include "mongo/db/index_names.h"
 #include "mongo/db/jsobj.h"
 
 namespace mongo {
 
-class CollatorInterface;
-struct TwoDIndexingParams;
-struct S2IndexingParams;
-struct NDIndexingParams;
+NDAccessMethod::NDAccessMethod(IndexCatalogEntry* btreeState,
+                               std::unique_ptr<SortedDataInterface> btree)
+    : AbstractIndexAccessMethod(btreeState, std::move(btree)) {
+    const IndexDescriptor* descriptor = btreeState->descriptor();
 
-namespace ExpressionParams {
+    ExpressionParams::parseNDParams(descriptor->infoObj(), &_params);
+}
 
-void parseTwoDParams(const BSONObj& infoObj, TwoDIndexingParams* out);
-
-void parseHashParams(const BSONObj& infoObj,
-                     HashSeed* seedOut,
-                     int* versionOut,
-                     BSONObj* keyPattern);
-
-void parseHaystackParams(const BSONObj& infoObj,
-                         std::string* geoFieldOut,
-                         std::vector<std::string>* otherFieldsOut,
-                         double* bucketSizeOut);
-
-void initialize2dsphereParams(const BSONObj& infoObj,
-                              const CollatorInterface* collator,
-                              S2IndexingParams* out);
-
-void parseNDParams(const BSONObj& infoObj, NDIndexingParams* out);
-
-}  // namespace ExpressionParams
+/** Finds the key objects to put in an index */
+void NDAccessMethod::doGetKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
+                               const BSONObj& obj,
+                               GetKeysContext context,
+                               KeyStringSet* keys,
+                               KeyStringSet* multikeyMetadataKeys,
+                               MultikeyPaths* multikeyPaths,
+                               boost::optional<RecordId> id) const {
+    ExpressionKeysPrivate::getNDKeys(pooledBufferBuilder,
+                                     obj,
+                                     _params,
+                                     keys,
+                                     getSortedDataInterface()->getKeyStringVersion(),
+                                     getSortedDataInterface()->getOrdering(),
+                                     id);
+}
 
 }  // namespace mongo
