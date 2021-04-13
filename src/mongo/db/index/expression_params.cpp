@@ -217,7 +217,7 @@ void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* o
         BSONElement e = i.next();
         // TODO support inner indexes like2D?
         uassert(42000000,
-                "nd index doesn't suport compounding yet",
+                "n dimensional index doesn't support compounding",
                 e.type() == String && IndexNames::ND == e.valuestr());
         out->features.push_back(e.fieldName());
     }
@@ -225,24 +225,60 @@ void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* o
     // TODO use different error codes here?
     uassert(42000001, "no n dimensional fields specified", out->features.size());
 
-    // TODO put these somewhere else?
-    BSONField<int> bitsField("bits", 26);
-    BSONField<double> maxField("max", 180.0);
-    BSONField<double> minField("min", -180.0);
+    const BSONField<int> bitsField("bits", 26);
+    const BSONField<BSONArray> minimaField("minima");
+    const BSONField<BSONArray> maximaField("maxima");
+    BSONArray minima;
+    BSONArray maxima;
 
+    // TODO instead change this interface to {ranges:{feildname: [min, max]}}?
     std::string errMsg;
     auto result = FieldParser::extractNumber(infoObj, bitsField, &out->bits, &errMsg);
     uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
 
-    result = FieldParser::extractNumber(infoObj, maxField, &out->max, &errMsg);
+    result = FieldParser::extract(infoObj, minimaField, &minima, &errMsg);
     uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
+    if (minima.isEmpty()) {
+        for (size_t i = 0; i < out->features.size(); i++) {
+            out->minima.push_back(-1.0);
+        }
+    } else {
+        BSONObjIterator minimaIter(minima);
+        while (minimaIter.more()) {
+            auto e = minimaIter.next();
+            out->minima.push_back(e.Number());
+        }
+        uassert(42000002,
+                "minima array must have a minimum value for each field being indexed",
+                out->minima.size() == out->features.size());
+    }
 
-    result = FieldParser::extractNumber(infoObj, minField, &out->min, &errMsg);
+    result = FieldParser::extract(infoObj, maximaField, &maxima, &errMsg);
     uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
+    if (maxima.isEmpty()) {
+        for (size_t i = 0; i < out->features.size(); i++) {
+            out->maxima.push_back(1.0);  // TODO better default values?
+        }
+    } else {
+        BSONObjIterator maximaIter(maxima);
+        while (maximaIter.more()) {
+            auto e = maximaIter.next();
+            out->maxima.push_back(e.Number());
+        }
+        uassert(42000003,
+                "maxima array must have a maximum value for each field being indexed",
+                out->maxima.size() == out->features.size());
+    }
+
+    int index = 0;
+    for (auto min : out->minima) {
+        uassert(42000004,
+                "minima for a given field Must be less than that maxima",
+                min < out->maxima[index]);
+        index++;
+    }
 
     // TODO add option for squashing?
-    // TODO right now there is a min and max for all axes instead of each axis
-    // maybe replace that with a vector of mins and vector of maxes
 
     // see this function for how 2d indexes parse other options
     // auto result = GeoHashConverter::createFromDoc(infoObj);

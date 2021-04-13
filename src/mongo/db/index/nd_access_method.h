@@ -40,8 +40,8 @@ class IndexDescriptor;
 struct NDIndexingParams {
     std::vector<std::string> features;
     int bits;
-    double min;
-    double max;
+    std::vector<double> minima;
+    std::vector<double> maxima;
 };
 
 class NDAccessMethod : public AbstractIndexAccessMethod {

@@ -94,6 +94,8 @@ static std::set<StringData> allowedFieldNames = {
     IndexDescriptor::kTextVersionFieldName,
     IndexDescriptor::kUniqueFieldName,
     IndexDescriptor::kWeightsFieldName,
+    IndexDescriptor::kMinimaFieldName,
+    IndexDescriptor::kMaximaFieldName,
     // Index creation under legacy writeMode can result in an index spec with an _id field.
     "_id"};
 

@@ -102,8 +102,14 @@ structs:
             min:
                 type: safeDouble
                 optional: true
+            minima:
+                type: array<safeDouble>
+                optional: true
             max:
                 type: safeDouble
+                optional: true
+            maxima:
+                type: array<safeDouble>
                 optional: true
             bucketSize:
                 type: safeDouble

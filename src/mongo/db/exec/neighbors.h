@@ -57,6 +57,7 @@ struct NeighborsStageParams {
     // TODO should this have addPointMeta/addDistMeta like GeoNearParams
 };
 
+// TODO this is an index_scan() like solution, is there a filter(colls_scan()) like solution?
 class NeighborsStage : public RequiresIndexStage {
 public:
     NeighborsStage(const NeighborsStageParams& params,

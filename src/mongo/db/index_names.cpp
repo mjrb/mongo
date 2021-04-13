@@ -45,15 +45,13 @@ const string IndexNames::BTREE = "";
 const string IndexNames::WILDCARD = "wildcard";
 const string IndexNames::ND = "nd";
 
-const StringMap<IndexType> kIndexNameToType = {
-    {IndexNames::GEO_2D, INDEX_2D},
-    {IndexNames::GEO_HAYSTACK, INDEX_HAYSTACK},
-    {IndexNames::GEO_2DSPHERE, INDEX_2DSPHERE},
-    {IndexNames::TEXT, INDEX_TEXT},
-    {IndexNames::HASHED, INDEX_HASHED},
-    {IndexNames::WILDCARD, INDEX_WILDCARD},
-    {IndexNames::ND, INDEX_ND}
-};
+const StringMap<IndexType> kIndexNameToType = {{IndexNames::GEO_2D, INDEX_2D},
+                                               {IndexNames::GEO_HAYSTACK, INDEX_HAYSTACK},
+                                               {IndexNames::GEO_2DSPHERE, INDEX_2DSPHERE},
+                                               {IndexNames::TEXT, INDEX_TEXT},
+                                               {IndexNames::HASHED, INDEX_HASHED},
+                                               {IndexNames::WILDCARD, INDEX_WILDCARD},
+                                               {IndexNames::ND, INDEX_ND}};
 
 // static
 string IndexNames::findPluginName(const BSONObj& keyPattern) {
