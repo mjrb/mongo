@@ -32,13 +32,14 @@
 #include "mongo/base/status.h"
 #include "mongo/db/index/index_access_method.h"
 #include "mongo/db/jsobj.h"
+#include "mongo/stdx/unordered_map.h"
 
 namespace mongo {
 
 class IndexCatalogEntry;
 class IndexDescriptor;
 struct NDIndexingParams {
-    std::vector<std::string> features;
+    stdx::unordered_map<std::string, int> features;
     int bits;
     std::vector<double> minima;
     std::vector<double> maxima;

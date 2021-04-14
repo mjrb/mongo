@@ -30,6 +30,7 @@
 #define MONGO_LOGV2_DEFAULT_COMPONENT ::mongo::logv2::LogComponent::kIndex
 
 #include "mongo/db/index/expression_keys_private.h"
+#include "mongo/platform/basic.h"
 
 #include <utility>
 
@@ -43,6 +44,7 @@
 #include "mongo/db/geo/geoparser.h"
 #include "mongo/db/geo/s2.h"
 #include "mongo/db/index/2d_common.h"
+#include "mongo/db/index/nd_access_method.h"
 #include "mongo/db/index/s2_common.h"
 #include "mongo/db/index_names.h"
 #include "mongo/db/query/collation/collation_index_key.h"
@@ -663,28 +665,94 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
                                       KeyString::Version keyStringVersion,
                                       Ordering ordering,
                                       boost::optional<RecordId> id) {
-    BSONElementMultiSet bSet;
+    std::vector<double> features(params.features.size(), 0.0);
+    BSONObjIterator boi(obj);
+    unsigned int found = 0;
+    while (boi.more() && found < params.features.size()) {
+        auto e = boi.next();
 
-    // TODO do this for every feild name in params.featutes to get the feature vector of this
-    // document
+        auto mapIter = params.features.find(e.fieldName());
+        if (mapIter == params.features.end()) {
+            continue;
+        }
+
+        features[mapIter->second] = e.Number();
+        found++;
+    }
+
+    uassert(42000005,
+            "document must contain all feilds indexed by n dimensional index",
+            found == params.features.size());
 
     // Get all the nested location fields, but don't return individual elements from the last array,
     // if it exists.
+
+    // TODO dotted path support
+
+    // BSONElementMultiSet bSet;
 
     // dps::extractAllElementsAlongPath(obj, params.geo.c_str(), bSet, false);
 
     // if (bSet.empty())
     //     return;
 
-    // TODO uassert min < x < max
-
+    // make sure all of the features are within the indexes bounds
+    unsigned int i = 0;
+    for (auto feature : features) {
+        uassert(
+            42000006,
+            "inserted document had values outside the bounds specified when the index was created",
+            params.minima[i] < feature && feature < params.maxima[i]);
+        i++;
+    }
     auto keysSequence = keys->extract_sequence();
     KeyString::PooledBuilder keyString(pooledBufferBuilder, keyStringVersion, ordering);
-    // for bits / len(features)
-    // get which quadrant its in to get the current symbol in the keystring
-    // go the next deeper level in the tree
 
-    keyString.appendNull();  // TODO remove this?
+    // TODO extract this code
+    // TODO individual test for this code?
+    unsigned long long key = 0;
+    // TODO change this to calculate the center of the grid
+    std::vector<double> pivot(features.size(), 0.0);
+    int depth = 2;
+    unsigned int bits = params.bits;
+    for (unsigned int i = 0; i < bits; i += features.size()) {
+        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
+            if (features[featureNum] > pivot[featureNum]) {
+                key = (key << 1) | 1;
+            } else {
+                key = (key << 1) | 0;
+            }
+        }
+
+        // move this features pivot for the next comparison
+        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
+            if (features[featureNum] > pivot[featureNum]) {
+                // TODO update this to be abs(min) + abs(max) / 2 / depth
+                pivot[featureNum] += params.maxima[featureNum] / depth;
+            } else {
+                // TODO update this to be abs(min) + abs(max) / 2 / depth
+                pivot[featureNum] += params.minima[featureNum] / depth;
+            }
+        }
+        depth *= 2;
+    }
+
+    // taken from src/mongo/db/geo/hash.cpp appendHashToKeyString
+    char buf[8];
+    if constexpr (endian::Order::kNative == endian::Order::kLittle) {
+        // Reverse the order of bytes when copying between BinData and nd key string.
+        // nd key strings are meant to be compared from MSB to LSB
+        // from geo/hash.cpp
+        auto src = (char*)&key;
+        for (unsigned a = 0; a < 8; a++) {
+            buf[a] = src[7 - a];
+        }
+    } else {
+        std::memcpy(buf, reinterpret_cast<char*>(&key), 8);
+    }
+    keyString.appendBinData(BSONBinData(buf, 8, bdtCustom));
+
+
     if (id) {
         keyString.appendRecordId(*id);
     }

@@ -213,13 +213,15 @@ void ExpressionParams::initialize2dsphereParams(const BSONObj& infoObj,
 void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* out) {
     BSONObjIterator i(infoObj.getObjectField("key"));
 
+    int fieldCount = 0;
     while (i.more()) {
         BSONElement e = i.next();
         // TODO support inner indexes like2D?
         uassert(42000000,
                 "n dimensional index doesn't support compounding",
                 e.type() == String && IndexNames::ND == e.valuestr());
-        out->features.push_back(e.fieldName());
+        out->features[e.fieldName()] = fieldCount;
+        fieldCount++;
     }
 
     // TODO use different error codes here?
@@ -277,6 +279,15 @@ void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* o
                 min < out->maxima[index]);
         index++;
     }
+
+    uassert(42000007,
+            "bits must be evenly divisible by the amount of fields being indexed",
+            out->features.size() % out->bits != 0);
+
+    uassert(42000007,  // TODO support longer keys?
+            "bits must be less than 64",
+            out->bits <= 64);
+
 
     // TODO add option for squashing?
 
