@@ -46,7 +46,7 @@
 namespace mongo {
 
 struct NeighborsStageParams {
-    NeighborsStageParams() : filter(nullptr) {}
+    NeighborsStageParams() {}
     int k;
 
     // MatchExpression* filter; // TODO filter is too complicated. don't allow it for now
