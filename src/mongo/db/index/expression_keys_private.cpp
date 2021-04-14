@@ -659,7 +659,8 @@ void ExpressionKeysPrivate::getS2Keys(SharedBufferFragmentBuilder& pooledBufferB
 }
 
 
-unsigned long long ndHashFeatureVector(std::vector<double> features, NDIndexingParams params) {
+unsigned long long ExpressionKeysPrivate::ndHashFeatureVector(std::vector<double> features,
+                                                              NDIndexingParams params) {
     // TODO extract this code
     // TODO individual test for this code?
     unsigned long long key = 0;
@@ -741,7 +742,7 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
     auto keysSequence = keys->extract_sequence();
     KeyString::PooledBuilder keyString(pooledBufferBuilder, keyStringVersion, ordering);
 
-    unsigned long long key = ndHashFeatureVector(features, params);
+    unsigned long long key = ExpressionKeysPrivate::ndHashFeatureVector(features, params);
 
     // taken from src/mongo/db/geo/hash.cpp appendHashToKeyString
     char buf[8];
