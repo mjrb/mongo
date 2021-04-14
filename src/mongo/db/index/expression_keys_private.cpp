@@ -658,6 +658,39 @@ void ExpressionKeysPrivate::getS2Keys(SharedBufferFragmentBuilder& pooledBufferB
     keys->adopt_sequence(std::move(keysSequence));
 }
 
+
+unsigned long long ndHashFeatureVector(std::vector<double> features, NDIndexingParams params) {
+    // TODO extract this code
+    // TODO individual test for this code?
+    unsigned long long key = 0;
+    // TODO change this to calculate the center of the grid
+    std::vector<double> pivot(features.size(), 0.0);
+    int depth = 2;
+    unsigned int bits = params.bits;
+    for (unsigned int i = 0; i < bits; i += features.size()) {
+        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
+            if (features[featureNum] > pivot[featureNum]) {
+                key = (key << 1) | 1;
+            } else {
+                key = (key << 1) | 0;
+            }
+        }
+
+        // move this features pivot for the next comparison
+        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
+            if (features[featureNum] > pivot[featureNum]) {
+                // TODO update this to be abs(min) + abs(max) / 2 / depth
+                pivot[featureNum] += params.maxima[featureNum] / depth;
+            } else {
+                // TODO update this to be abs(min) + abs(max) / 2 / depth
+                pivot[featureNum] += params.minima[featureNum] / depth;
+            }
+        }
+        depth *= 2;
+    }
+    return key;
+}
+
 void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
                                       const BSONObj& obj,
                                       const NDIndexingParams& params,
@@ -708,34 +741,7 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
     auto keysSequence = keys->extract_sequence();
     KeyString::PooledBuilder keyString(pooledBufferBuilder, keyStringVersion, ordering);
 
-    // TODO extract this code
-    // TODO individual test for this code?
-    unsigned long long key = 0;
-    // TODO change this to calculate the center of the grid
-    std::vector<double> pivot(features.size(), 0.0);
-    int depth = 2;
-    unsigned int bits = params.bits;
-    for (unsigned int i = 0; i < bits; i += features.size()) {
-        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
-            if (features[featureNum] > pivot[featureNum]) {
-                key = (key << 1) | 1;
-            } else {
-                key = (key << 1) | 0;
-            }
-        }
-
-        // move this features pivot for the next comparison
-        for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
-            if (features[featureNum] > pivot[featureNum]) {
-                // TODO update this to be abs(min) + abs(max) / 2 / depth
-                pivot[featureNum] += params.maxima[featureNum] / depth;
-            } else {
-                // TODO update this to be abs(min) + abs(max) / 2 / depth
-                pivot[featureNum] += params.minima[featureNum] / depth;
-            }
-        }
-        depth *= 2;
-    }
+    unsigned long long key = ndHashFeatureVector(features, params);
 
     // taken from src/mongo/db/geo/hash.cpp appendHashToKeyString
     char buf[8];

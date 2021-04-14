@@ -48,6 +48,7 @@ namespace mongo {
 struct NeighborsStageParams {
     NeighborsStageParams() {}
     int k;
+    std::vector<double> queryPoint;
 
     // MatchExpression* filter; // TODO filter is too complicated. don't allow it for now
 
