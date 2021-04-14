@@ -47,8 +47,9 @@ namespace mongo {
 
 struct NeighborsStageParams {
     NeighborsStageParams() : filter(nullptr) {}
+    int k;
 
-    MatchExpression* filter;
+    // MatchExpression* filter; // TODO filter is too complicated. don't allow it for now
 
     IndexBounds baseBounds;  // TODO whats this for?
 
