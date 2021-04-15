@@ -149,7 +149,7 @@ public:
                           Ordering ordering,
                           boost::optional<RecordId> id = boost::none);
 
-    static unsigned long long ndHashFeatureVector(std::vector<double> features,
+    static unsigned long long ndHashFeatureVector(std::vector<Decimal128> features,
                                                   NDIndexingParams params);
 
     //

@@ -41,8 +41,8 @@ class IndexDescriptor;
 struct NDIndexingParams {
     stdx::unordered_map<std::string, int> features;
     int bits;
-    std::vector<double> minima;
-    std::vector<double> maxima;
+    std::vector<Decimal128> minima;
+    std::vector<Decimal128> maxima;
 };
 
 class NDAccessMethod : public AbstractIndexAccessMethod {

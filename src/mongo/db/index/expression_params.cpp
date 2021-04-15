@@ -242,13 +242,13 @@ void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* o
     uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
     if (minima.isEmpty()) {
         for (size_t i = 0; i < out->features.size(); i++) {
-            out->minima.push_back(-1.0);
+            out->minima.push_back(Decimal128(-1.0));
         }
     } else {
         BSONObjIterator minimaIter(minima);
         while (minimaIter.more()) {
             auto e = minimaIter.next();
-            out->minima.push_back(e.Number());
+            out->minima.push_back(e.numberDecimal());
         }
         uassert(42000002,
                 "minima array must have a minimum value for each field being indexed",
@@ -259,13 +259,13 @@ void ExpressionParams::parseNDParams(const BSONObj& infoObj, NDIndexingParams* o
     uassert(ErrorCodes::InvalidOptions, errMsg, FieldParser::FIELD_INVALID != result);
     if (maxima.isEmpty()) {
         for (size_t i = 0; i < out->features.size(); i++) {
-            out->maxima.push_back(1.0);  // TODO better default values?
+            out->maxima.push_back(Decimal128(1.0));  // TODO better default values?
         }
     } else {
         BSONObjIterator maximaIter(maxima);
         while (maximaIter.more()) {
             auto e = maximaIter.next();
-            out->maxima.push_back(e.Number());
+            out->maxima.push_back(e.numberDecimal());
         }
         uassert(42000003,
                 "maxima array must have a maximum value for each field being indexed",

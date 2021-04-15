@@ -32,6 +32,7 @@
 #include "mongo/db/index/expression_keys_private.h"
 #include "mongo/platform/basic.h"
 
+#include <iostream>  // TODO remove
 #include <utility>
 
 #include "mongo/bson/bsonelement_comparator_interface.h"
@@ -659,16 +660,24 @@ void ExpressionKeysPrivate::getS2Keys(SharedBufferFragmentBuilder& pooledBufferB
 }
 
 
-unsigned long long ExpressionKeysPrivate::ndHashFeatureVector(std::vector<double> features,
+unsigned long long ExpressionKeysPrivate::ndHashFeatureVector(std::vector<Decimal128> features,
                                                               NDIndexingParams params) {
-    // TODO extract this code
+    bool debug = true;
     // TODO individual test for this code?
     unsigned long long key = 0;
-    // TODO change this to calculate the center of the grid
-    std::vector<double> pivot(features.size(), 0.0);
-    int depth = 2;
+    // calculate the center of the grid
+    std::vector<Decimal128> pivot;
+    for (unsigned int i = 0; i < params.minima.size(); i++) {
+        pivot.push_back(params.maxima[i].add(params.minima[i]).divide(Decimal128(4)));
+    }
+    int depth = 0;
     unsigned int bits = params.bits;
+    if (debug)
+        std::cout << "\n\n\n\n";
     for (unsigned int i = 0; i < bits; i += features.size()) {
+        if (debug)
+            for (auto d : pivot)
+                std::cout << d.toString() << "\n";
         for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
             if (features[featureNum] > pivot[featureNum]) {
                 key = (key << 1) | 1;
@@ -679,16 +688,19 @@ unsigned long long ExpressionKeysPrivate::ndHashFeatureVector(std::vector<double
 
         // move this features pivot for the next comparison
         for (unsigned int featureNum = 0; featureNum < features.size(); featureNum++) {
+            auto delta = params.maxima[featureNum]
+                             .subtract(params.minima[featureNum])
+                             .divide(Decimal128(2).power(Decimal128(depth + 2)));
             if (features[featureNum] > pivot[featureNum]) {
-                // TODO update this to be abs(min) + abs(max) / 2 / depth
-                pivot[featureNum] += params.maxima[featureNum] / depth;
+                pivot[featureNum] = pivot[featureNum].add(delta);
             } else {
-                // TODO update this to be abs(min) + abs(max) / 2 / depth
-                pivot[featureNum] += params.minima[featureNum] / depth;
+                pivot[featureNum] = pivot[featureNum].subtract(delta);
             }
         }
-        depth *= 2;
+        depth++;
     }
+    if (debug)
+        std::cout << std::hex << key << std::dec << "\n";
     return key;
 }
 
@@ -699,7 +711,7 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
                                       KeyString::Version keyStringVersion,
                                       Ordering ordering,
                                       boost::optional<RecordId> id) {
-    std::vector<double> features(params.features.size(), 0.0);
+    std::vector<Decimal128> features(params.features.size(), Decimal128());
     BSONObjIterator boi(obj);
     unsigned int found = 0;
     while (boi.more() && found < params.features.size()) {
@@ -710,7 +722,7 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
             continue;
         }
 
-        features[mapIter->second] = e.Number();
+        features[mapIter->second] = e.numberDecimal();
         found++;
     }
 
