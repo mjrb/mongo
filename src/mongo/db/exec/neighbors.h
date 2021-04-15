@@ -53,13 +53,8 @@ struct NeighborsStageParams {
     // MatchExpression* filter; // TODO filter is too complicated. don't allow it for now
 
     IndexBounds baseBounds;  // TODO whats this for?
-
-    // TODO query point vector/record id?
-    // const GeoNearExpression* nearQuery
-    // TODO should this have addPointMeta/addDistMeta like GeoNearParams
 };
 
-// TODO this is an index_scan() like solution, is there a filter(colls_scan()) like solution?
 class NeighborsStage : public RequiresIndexStage {
 public:
     NeighborsStage(const NeighborsStageParams& params,
@@ -96,6 +91,10 @@ protected:
     void doRestoreStateRequiresIndex() final {}
 
 private:
+    enum ScanState { INITIALIZING, WORKING, FINALIZING };
+
+    ScanState _scanState = ScanState::INITIALIZING;
+
     NeighborsStageParams _params;
 
     //

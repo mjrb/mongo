@@ -60,6 +60,33 @@ PlanStage::StageState NeighborsStage::doWork(WorkingSetID* out) {
     // the behavior is going to be a little different though
     // TODO change this to actual behavior
 
+    // initialize if first call
+    //   acquire indexCursor
+    //   setup the regions queue
+
+    // working state
+    // deque a region
+
+    // if we have k candidates and mindist to the region > the distince to the kth candidate
+    // state -> finalizing
+    // set counter to k
+
+    // if we can split the region
+    // split it and enqueue the children
+    // else
+    // we've made it to a grid cell and need to enqueue the candidates point
+    // make an key from the centerpoint of that gridcell
+    // make a keystring by calling ndKeyToKeyString
+    // seek the index cursor to that grid cell
+    // compute distance to each point
+
+    // if we are in the finalizing state
+    // if the counter is 0, return EOF
+    // dequeue the first candidate
+    // retrive it from the db, using its recordID
+    // add it to the working set
+    // decrement counter
+
     return PlanStage::IS_EOF;
 }
 
