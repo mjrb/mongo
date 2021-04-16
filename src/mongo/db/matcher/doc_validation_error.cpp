@@ -801,6 +801,9 @@ public:
     void visit(const GeoNearMatchExpression* expr) final {
         MONGO_UNREACHABLE;
     }
+    void visit(const NeighborsMatchExpression* expr) final {
+        // TODO
+    }
     void visit(const InMatchExpression* expr) final {
         static constexpr auto kNormalReason = "no matching value found in array";
         static constexpr auto kInvertedReason = "matching value found in array";
@@ -1800,6 +1803,7 @@ public:
     void visit(const GeoNearMatchExpression* expr) final {
         MONGO_UNREACHABLE;
     }
+    void visit(const NeighborsMatchExpression* expr) final {}
     void visit(const InMatchExpression* expr) final {}
     void visit(const InternalExprEqMatchExpression* expr) final {}
     void visit(const InternalExprGTMatchExpression* expr) final {}
@@ -2010,6 +2014,10 @@ public:
     void visit(const GeoNearMatchExpression* expr) final {
         MONGO_UNREACHABLE;
     }
+    void visit(const NeighborsMatchExpression* expr) final {
+        _context->finishCurrentError((const MatchExpression*)expr);
+    }
+
     void visit(const InMatchExpression* expr) final {
         _context->finishCurrentError(expr);
     }

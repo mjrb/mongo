@@ -48,6 +48,7 @@ class GTEMatchExpression;
 class GTMatchExpression;
 class GeoMatchExpression;
 class GeoNearMatchExpression;
+class NeighborsMatchExpression;
 class InMatchExpression;
 class InternalExprEqMatchExpression;
 class InternalExprGTMatchExpression;
@@ -117,6 +118,7 @@ public:
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, GTMatchExpression> expr) = 0;
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, GeoMatchExpression> expr) = 0;
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, GeoNearMatchExpression> expr) = 0;
+    virtual void visit(tree_walker::MaybeConstPtr<IsConst, NeighborsMatchExpression> expr) = 0;
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, InMatchExpression> expr) = 0;
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, InternalExprEqMatchExpression> expr) = 0;
     virtual void visit(tree_walker::MaybeConstPtr<IsConst, InternalExprGTMatchExpression> expr) = 0;

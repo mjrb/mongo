@@ -1104,6 +1104,9 @@ public:
     void visit(const GeoNearMatchExpression* expr) final {
         unsupportedExpression(expr);
     }
+    void visit(const NeighborsMatchExpression* expr) final {
+        unsupportedExpression((const MatchExpression*)expr);// TODO why is this cast needed???
+    }
     void visit(const InMatchExpression* expr) final {}
     void visit(const InternalExprEqMatchExpression* expr) final {}
     void visit(const InternalExprGTMatchExpression* expr) final {}
@@ -1436,6 +1439,8 @@ public:
 
     void visit(const GeoMatchExpression* expr) final {}
     void visit(const GeoNearMatchExpression* expr) final {}
+    void visit(const NeighborsMatchExpression* expr) final {}
+
 
     void visit(const InMatchExpression* expr) final {
         auto equalities = expr->getEqualities();
@@ -1832,6 +1837,7 @@ public:
     void visit(const GTMatchExpression* expr) final {}
     void visit(const GeoMatchExpression* expr) final {}
     void visit(const GeoNearMatchExpression* expr) final {}
+    void visit(const NeighborsMatchExpression* expr) final {}
     void visit(const InMatchExpression* expr) final {}
     void visit(const InternalExprEqMatchExpression* expr) final {}
     void visit(const InternalExprGTMatchExpression* expr) final {}

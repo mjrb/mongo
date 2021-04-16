@@ -27,6 +27,7 @@ env.Library(
         'expression_array.cpp',
         'expression_expr.cpp',
         'expression_geo.cpp',
+        'expression_neighbors.cpp',
         'expression_leaf.cpp',
         'expression_parser.cpp',
         'expression_text_base.cpp',

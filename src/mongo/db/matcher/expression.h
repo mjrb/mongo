@@ -104,6 +104,7 @@ public:
         // Things that we parse but cannot be answered without an index.
         GEO_NEAR,
         TEXT,
+        NEIGHBORS,
 
         // Expressions that are only created internally
         INTERNAL_2D_POINT_IN_ANNULUS,

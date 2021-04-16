@@ -44,6 +44,7 @@
 #include "mongo/db/matcher/expression_array.h"
 #include "mongo/db/matcher/expression_expr.h"
 #include "mongo/db/matcher/expression_geo.h"
+#include "mongo/db/matcher/expression_neighbors.h"
 #include "mongo/db/matcher/expression_internal_expr_comparison.h"
 #include "mongo/db/matcher/expression_leaf.h"
 #include "mongo/db/matcher/expression_tree.h"
@@ -1167,6 +1168,24 @@ StatusWithMatchExpression parseGeo(StringData name,
     }
 }
 
+StatusWithMatchExpression parseNeighbors(const BSONObj& params,
+                                         const boost::intrusive_ptr<ExpressionContext>& expCtx,
+                                         MatchExpressionParser::AllowedFeatureSet allowedFeatures) {
+    /* TODO sanity /parsing check
+    invariant((allowedFeatures & MatchExpressionParser::AllowedFeatures::kGeoNeighbors) == 0u) {
+                    return {Status(ErrorCodes::BadValue,
+                           "$geoNear, $near, and $nearSphere are not allowed in this context")};
+                           }*/
+    auto nq = std::make_unique<NeighborsMatchExpression>();
+    auto status = nq->parseFrom(params);
+    if (!status.isOK()) {
+        return status;
+    }
+    expCtx->sbeCompatible = false;
+    return {std::move(nq)}
+}
+
+
 template <class T>
 StatusWithMatchExpression parseTreeTopLevel(
     StringData name,
@@ -1966,7 +1985,19 @@ Status parseSub(StringData name,
                 // Propagate geo parsing result to caller.
                 return s.getStatus();
             }
+            if (MatchExpressionParser::parsePathAcceptingKeyword(firstElt) ==
+                PathAcceptingKeyword::NEIGHBORS) {
+                auto s =
+                    parseNeighbors(firstElt.Obj(), expCtx, allowedFeatures);
+                if (s.isOK()) {
+                    addExpressionToRoot(expCtx, root, std::move(s.getValue()));
+                }
+
+                // Propagate geo parsing result to caller.
+                return s.getStatus();
+            }
         }
+
     }
 
     for (auto deep : sub) {
@@ -2117,6 +2148,7 @@ MONGO_INITIALIZER(MatchExpressionParser)(InitializerContext* context) {
             {"size", PathAcceptingKeyword::SIZE},
             {"type", PathAcceptingKeyword::TYPE},
             {"within", PathAcceptingKeyword::WITHIN},
+            {"neighbors", PathAcceptingKeyword::NEIGHBORS}
         });
 }
 
