@@ -1206,6 +1206,47 @@ QuerySolutionNode* GeoNear2DSphereNode::clone() const {
 }
 
 //
+// NeighborsNode
+//
+
+void NeighborsNode::appendToString(str::stream* ss, int indent) const {
+    addIndent(ss, indent);
+    *ss << "Neighbors\n";
+    addIndent(ss, indent + 1);
+    *ss << "name = " << index.identifier.catalogName << '\n';
+    addIndent(ss, indent + 1);
+    *ss << "keyPattern = " << index.keyPattern.toString() << '\n';
+    addCommon(ss, indent);
+    *ss << "baseBounds = " << baseBounds.toString() << '\n';
+    addIndent(ss, indent + 1);
+    *ss << "point = "
+        << "[";
+    if (point) {
+        for (auto&& val : *point) {
+            *ss << val.toString() << ", ";
+        }
+    }
+    *ss << "]" << '\n';
+
+    if (nullptr != filter) {
+        addIndent(ss, indent + 1);
+        *ss << " filter = " << filter->debugString();
+    }
+}
+
+QuerySolutionNode* NeighborsNode::clone() const {
+    NeighborsNode* copy = new NeighborsNode(this->index);
+    cloneBaseData(copy);
+
+    copy->point = this->point;
+    copy->baseBounds = this->baseBounds;
+    copy->addPointMeta = this->addPointMeta;
+    copy->addDistMeta = this->addDistMeta;
+
+    return copy;
+}
+
+//
 // ShardingFilterNode
 //
 
