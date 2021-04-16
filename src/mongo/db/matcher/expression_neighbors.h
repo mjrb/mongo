@@ -71,11 +71,11 @@ public:
     Status parseFrom(const BSONObj& obj);
 
     const std::vector<Decimal128>& getQueryPoint() const {
-	return _queryPoint;
+        return _queryPoint;
     }
 
     const int& getK() const {
-	return _k;
+        return _k;
     }
 
 private:
@@ -92,3 +92,5 @@ private:
     // Share ownership of our query with all of our clones
     bool _canSkipValidation;
 };
+
+}  // namespace mongo

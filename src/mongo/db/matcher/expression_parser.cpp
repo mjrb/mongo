@@ -44,9 +44,9 @@
 #include "mongo/db/matcher/expression_array.h"
 #include "mongo/db/matcher/expression_expr.h"
 #include "mongo/db/matcher/expression_geo.h"
-#include "mongo/db/matcher/expression_neighbors.h"
 #include "mongo/db/matcher/expression_internal_expr_comparison.h"
 #include "mongo/db/matcher/expression_leaf.h"
+#include "mongo/db/matcher/expression_neighbors.h"
 #include "mongo/db/matcher/expression_tree.h"
 #include "mongo/db/matcher/expression_type.h"
 #include "mongo/db/matcher/expression_with_placeholder.h"
@@ -1168,23 +1168,30 @@ StatusWithMatchExpression parseGeo(StringData name,
     }
 }
 
-StatusWithMatchExpression parseNeighbors(const BSONObj& params,
+StatusWithMatchExpression parseNeighbors(StringData name,
+                                         BSONElement elem,
                                          const boost::intrusive_ptr<ExpressionContext>& expCtx,
-                                         MatchExpressionParser::AllowedFeatureSet allowedFeatures) {
-    /* TODO sanity /parsing check
-    invariant((allowedFeatures & MatchExpressionParser::AllowedFeatures::kGeoNeighbors) == 0u) {
-                    return {Status(ErrorCodes::BadValue,
-                           "$geoNear, $near, and $nearSphere are not allowed in this context")};
-                           }*/
+                                         const ExtensionsCallback* extensionsCallback,
+                                         MatchExpressionParser::AllowedFeatureSet allowedFeatures,
+                                         DocumentParseLevel currentLevel) {
+    if (currentLevel == DocumentParseLevel::kUserSubDocument) {
+        return {Status(ErrorCodes::BadValue,
+                       "$neighbors can only be applied to the top-level document")};
+    }
+
+    /*
+    if ((allowedFeatures & MatchExpressionParser::AllowedFeatures::kNeighbors) == 0u) {
+        return {Status(ErrorCodes::BadValue, "$neighbors is not allowed in this context")};
+        }*/
+
     auto nq = std::make_unique<NeighborsMatchExpression>();
-    auto status = nq->parseFrom(params);
+    auto status = nq->parseFrom(elem.Obj());
     if (!status.isOK()) {
         return status;
     }
     expCtx->sbeCompatible = false;
-    return {std::move(nq)}
+    return {std::move(nq)};
 }
-
 
 template <class T>
 StatusWithMatchExpression parseTreeTopLevel(
@@ -1985,19 +1992,7 @@ Status parseSub(StringData name,
                 // Propagate geo parsing result to caller.
                 return s.getStatus();
             }
-            if (MatchExpressionParser::parsePathAcceptingKeyword(firstElt) ==
-                PathAcceptingKeyword::NEIGHBORS) {
-                auto s =
-                    parseNeighbors(firstElt.Obj(), expCtx, allowedFeatures);
-                if (s.isOK()) {
-                    addExpressionToRoot(expCtx, root, std::move(s.getValue()));
-                }
-
-                // Propagate geo parsing result to caller.
-                return s.getStatus();
-            }
         }
-
     }
 
     for (auto deep : sub) {
@@ -2090,7 +2085,7 @@ MONGO_INITIALIZER(PathlessOperatorMap)(InitializerContext* context) {
             {"sampleRate", &parseSampleRate},
             {"text", &parseText},
             {"where", &parseWhere},
-        });
+            {"neighbors", &parseNeighbors}});
 }
 
 // Maps from query operator string name to operator PathAcceptingKeyword.
@@ -2148,7 +2143,6 @@ MONGO_INITIALIZER(MatchExpressionParser)(InitializerContext* context) {
             {"size", PathAcceptingKeyword::SIZE},
             {"type", PathAcceptingKeyword::TYPE},
             {"within", PathAcceptingKeyword::WITHIN},
-            {"neighbors", PathAcceptingKeyword::NEIGHBORS}
         });
 }
 

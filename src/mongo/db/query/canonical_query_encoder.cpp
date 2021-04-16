@@ -261,6 +261,9 @@ const char* encodeMatchType(MatchExpression::MatchType mt) {
         case MatchExpression::INTERNAL_SCHEMA_TYPE:
             return "internalSchemaType";
 
+        case MatchExpression::NEIGHBORS:
+            return "neighbors";
+
         default:
             MONGO_UNREACHABLE;
     }

@@ -83,7 +83,6 @@ enum class PathAcceptingKeyword {
     LESS_THAN,
     LESS_THAN_OR_EQUAL,
     MOD,
-    NEIGHBORS,
     NOT_EQUAL,
     NOT_IN,
     OPTIONS,

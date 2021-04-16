@@ -43,10 +43,11 @@ namespace mongo {
  * Takes shared ownership of the passed-in GeoExpression.
  */
 NeighborsMatchExpression::NeighborsMatchExpression(clonable_ptr<ErrorAnnotation> annotation)
-    : LeafMatchExpression(NEIGHBORS, "neighborssss"_sd, std::move(annotation)),
+    : LeafMatchExpression(NEIGHBORS, "neighbors"_sd, std::move(annotation)),
       _canSkipValidation(false) {}
 
-bool NeighborsMatchExpression::matchesSingleElement(const BSONElement& e, MatchDetails* details) const {
+bool NeighborsMatchExpression::matchesSingleElement(const BSONElement& e,
+                                                    MatchDetails* details) const {
     // TODO, uhhhhhh idk what to do for a bunch of these functions
     return false;
     /*
@@ -96,11 +97,11 @@ void NeighborsMatchExpression::debugString(StringBuilder& debug, int indentation
 }
 
 BSONObj NeighborsMatchExpression::getSerializedRightHandSide() const {
-    return BSONObj();
+    return BSONObj(_rawObj);
 }
 
 bool NeighborsMatchExpression::equivalent(const MatchExpression* other) const {
-    return false; // TODO will this cause bugs???
+    return false;  // TODO will this cause bugs???
     /*
     if (matchType() != other->matchType())
         return false;
@@ -114,31 +115,34 @@ bool NeighborsMatchExpression::equivalent(const MatchExpression* other) const {
 }
 
 std::unique_ptr<MatchExpression> NeighborsMatchExpression::shallowClone() const {
-    std::unique_ptr<GeoMatchExpression> next =
+    std::unique_ptr<NeighborsMatchExpression> next =
         std::make_unique<NeighborsMatchExpression>(_errorAnnotation);
     next->_canSkipValidation = _canSkipValidation;
     if (getTag()) {
         next->setTag(getTag()->clone());
     }
-    next->parseFrom(_rawObj);
+    auto s = next->parseFrom(_rawObj);
     return next;
 }
 
-Status parseFrom(const BSONObj& obj) {
-    _rawObj = obj.clone();
+Status NeighborsMatchExpression::parseFrom(const BSONObj& obj) {
+    _rawObj = BSONObj(obj);
     BSONObjIterator boi(obj);
     while (boi.more()) {
         auto e = boi.next();
-        if (e.fieldName() == "k") {
-            _k = e.Int();
-        } else if (e.feildName() == "point") {
+        if (e.fieldName() == "k"_sd) {
+            _k = e.Number();
+        } else if (e.fieldName() == "point"_sd) {
             auto a = e.Array();
             for (auto feature : a) {
-                _queryPoint.push_back(feautre.Decimal());
+                _queryPoint.push_back(feature.numberDecimal());
             }
         }
     }
-    uassert(42000020, "point required in $neighbors", _queryPoint.size() > 0);
+    if (_queryPoint.size() == 0) {
+        return Status(ErrorCodes::BadValue, "point required in $neighbors");
+    }
+    return Status::OK();
 }
 
 }  // namespace mongo

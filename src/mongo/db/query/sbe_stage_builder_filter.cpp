@@ -1105,7 +1105,7 @@ public:
         unsupportedExpression(expr);
     }
     void visit(const NeighborsMatchExpression* expr) final {
-        unsupportedExpression((const MatchExpression*)expr);// TODO why is this cast needed???
+        unsupportedExpression((const MatchExpression*)expr);  // TODO why is this cast needed???
     }
     void visit(const InMatchExpression* expr) final {}
     void visit(const InternalExprEqMatchExpression* expr) final {}

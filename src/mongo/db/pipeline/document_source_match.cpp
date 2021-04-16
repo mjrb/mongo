@@ -266,7 +266,6 @@ Document redactSafePortionDollarOps(BSONObj expr) {
             case PathAcceptingKeyword::EXISTS:
             case PathAcceptingKeyword::GEO_INTERSECTS:
             case PathAcceptingKeyword::GEO_NEAR:
-            case PathAcceptingKeyword::NEIGHBORS:
             case PathAcceptingKeyword::INTERNAL_EXPR_EQ:
             case PathAcceptingKeyword::INTERNAL_EXPR_GT:
             case PathAcceptingKeyword::INTERNAL_EXPR_GTE:
