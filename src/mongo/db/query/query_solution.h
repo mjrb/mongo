@@ -1069,6 +1069,38 @@ struct GeoNear2DSphereNode : public QuerySolutionNodeWithSortSet {
     bool addDistMeta;
 };
 
+struct NeighborsNode : public QuerySolutionNodeWithSortSet {
+    NeighborsNode(IndexEntry index)
+        : index(std::move(index)), addPointMeta(false), addDistMeta(false) {}
+
+    virtual ~NeighborsNode() {}
+
+    virtual StageType getType() const {
+        return STAGE_NEIGHBORS;
+    }
+    virtual void appendToString(str::stream* ss, int indent) const;
+
+    bool fetched() const {
+        return true;
+    }
+    FieldAvailability getFieldAvailability(const std::string& field) const {
+        return FieldAvailability::kFullyProvided;
+    }
+    bool sortedByDiskLoc() const {
+        return false;
+    }
+
+    QuerySolutionNode* clone() const;
+
+    // Not owned here
+    const std::vector<Decimal128>* point;
+    IndexBounds baseBounds;
+
+    IndexEntry index;
+    bool addPointMeta;
+    bool addDistMeta;
+};
+
 //
 // Internal nodes used to provide functionality
 //
