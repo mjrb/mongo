@@ -704,13 +704,8 @@ unsigned long long ExpressionKeysPrivate::ndHashFeatureVector(std::vector<Decima
     return key;
 }
 
-void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
-                                      const BSONObj& obj,
-                                      const NDIndexingParams& params,
-                                      KeyStringSet* keys,
-                                      KeyString::Version keyStringVersion,
-                                      Ordering ordering,
-                                      boost::optional<RecordId> id) {
+std::vector<Decimal128> ExpressionKeysPrivate::extractNDFeatureVector(
+    const BSONObj& obj, const NDIndexingParams& params) {
     std::vector<Decimal128> features(params.features.size(), Decimal128());
     BSONObjIterator boi(obj);
     unsigned int found = 0;
@@ -751,6 +746,19 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
             params.minima[i] < feature && feature < params.maxima[i]);
         i++;
     }
+
+    return features;
+}
+
+void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferBuilder,
+                                      const BSONObj& obj,
+                                      const NDIndexingParams& params,
+                                      KeyStringSet* keys,
+                                      KeyString::Version keyStringVersion,
+                                      Ordering ordering,
+                                      boost::optional<RecordId> id) {
+    auto features = extractNDFeatureVector(obj, params);
+
     auto keysSequence = keys->extract_sequence();
     KeyString::PooledBuilder keyString(pooledBufferBuilder, keyStringVersion, ordering);
 
@@ -770,7 +778,6 @@ void ExpressionKeysPrivate::getNDKeys(SharedBufferFragmentBuilder& pooledBufferB
         std::memcpy(buf, reinterpret_cast<char*>(&key), 8);
     }
     keyString.appendBinData(BSONBinData(buf, 8, bdtCustom));
-
 
     if (id) {
         keyString.appendRecordId(*id);

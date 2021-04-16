@@ -34,6 +34,7 @@
 #include "mongo/base/string_data.h"
 #include "mongo/db/exec/neighbors.h"
 #include "mongo/db/exec/working_set_common.h"
+#include "mongo/db/index/expression_keys_private.h"
 
 namespace mongo {
 
@@ -47,7 +48,9 @@ NeighborsStage::NeighborsStage(const NeighborsStageParams& params,
     : RequiresIndexStage(
           kNDIndexNeighborsStage.c_str(), expCtx, collection, indexDescriptor, workingSet),
       _params(params),
-      _workingSet(workingSet) {}
+      _workingSet(workingSet) {
+    _indexParams = dynamic_cast<const NDAccessMethod*>(indexAccessMethod())->readParams();
+}
 
 NeighborsStage::~NeighborsStage() {}
 
@@ -108,5 +111,43 @@ const SpecificStats* NeighborsStage::getSpecificStats() const {
     return nullptr;
 }
 
+
+KeyString::Value NeighborsStage::ndKeyToKeyString(unsigned long long key) {
+    // TODO use pooled version
+
+    // TODO get version from caller
+    KeyString::HeapBuilder keyString(KeyString::Version::kLatestVersion);
+
+    // taken from src/mongo/db/geo/hash.cpp appendHashToKeyString
+    char buf[8];
+    if constexpr (endian::Order::kNative == endian::Order::kLittle) {
+        // Reverse the order of bytes when copying between BinData and nd key string.
+        // nd key strings are meant to be compared from MSB to LSB
+        // from geo/hash.cpp
+        auto src = (char*)&key;
+        for (unsigned a = 0; a < 8; a++) {
+            buf[a] = src[7 - a];
+        }
+    } else {
+        std::memcpy(buf, reinterpret_cast<char*>(&key), 8);
+    }
+    keyString.appendBinData(BSONBinData(buf, 8, bdtCustom));
+
+    return keyString.release();
+}
+
+Decimal128 NeighborsStage::distanceToMember(WorkingSetMember* member) {
+    auto obj = member->doc.value().toBson();
+    auto features = ExpressionKeysPrivate::extractNDFeatureVector(obj, *_indexParams);
+
+    Decimal128 distance;
+    const Decimal128 two(2);
+    int i = 0;
+    for (auto feature : features) {
+        distance = distance.add(feature.subtract(_params.queryPoint[i]).power(two));
+        i++;
+    }
+    return distance.squareRoot();
+}
 
 }  // namespace mongo

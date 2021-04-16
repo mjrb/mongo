@@ -37,6 +37,7 @@
 #include "mongo/db/exec/plan_stats.h"
 #include "mongo/db/exec/requires_index_stage.h"
 #include "mongo/db/exec/working_set.h"
+#include "mongo/db/index/nd_access_method.h"
 #include "mongo/db/matcher/expression.h"
 #include "mongo/db/query/stage_types.h"
 #include "mongo/db/record_id.h"
@@ -97,6 +98,9 @@ private:
 
     NeighborsStageParams _params;
 
+    // not owned here
+    const NDIndexingParams* _indexParams;
+
     //
     // Generic state for progressive near search
     //
@@ -137,6 +141,11 @@ private:
     // because they are all EOF.
     // TODO do we need this/what is it
     // std::vector<std::unique_ptr<CoveredInterval>> _childrenIntervals;
+
+    // private helpers
+    Decimal128 distanceToMember(WorkingSetMember* member);
+
+    KeyString::Value ndKeyToKeyString(unsigned long long key);
 };
 
 }  // namespace mongo

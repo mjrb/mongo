@@ -49,6 +49,10 @@ class NDAccessMethod : public AbstractIndexAccessMethod {
 public:
     NDAccessMethod(IndexCatalogEntry* btreeState, std::unique_ptr<SortedDataInterface> btree);
 
+    const NDIndexingParams* readParams() const {
+        return &_params;
+    }
+
 private:
     const IndexDescriptor* getDescriptor() {
         return _descriptor;

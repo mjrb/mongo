@@ -152,8 +152,8 @@ public:
     static unsigned long long ndHashFeatureVector(std::vector<Decimal128> features,
                                                   NDIndexingParams params);
 
-    static KeyString::Value ndKeyToKeyString(unsigned long long key,
-                                             boost::optional<RecordId> id = boost::none);
+    static std::vector<Decimal128> extractNDFeatureVector(const BSONObj&,
+                                                          const NDIndexingParams& params);
 
     static Decimal128 distanceToKeyString(const std::vector<Decimal128>& query,
                                           const KeyString::Value& ks);
